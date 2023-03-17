@@ -5,11 +5,9 @@ import { Inter } from "next/font/google";
 import styles from "@/styles/Home.module.css";
 import { ethers } from "ethers";
 import { Biconomy } from "@biconomy/mexa";
-const inter = Inter({ subsets: ["latin"] });
 import ABI from "../Abi.json";
 
 export default function Home() {
-  const [count, setCount] = useState(0);
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const addr = "0x5243E2d619914e71a6A820428E0291946C276fa6";
@@ -25,7 +23,7 @@ export default function Home() {
     setProvider(provider);
     setSigner(provider.getSigner());
     console.log("signer", provider.getSigner());
-    initBiconomy(provider.getSigner());
+
     provider.send("eth_requestAccounts", []).then((accounts) => {
       if (accounts.length > 0) setCurrentAccount(accounts[0]);
     });
@@ -36,33 +34,9 @@ export default function Home() {
     console.log("count", count.toString());
   };
 
-  const initBiconomy = async (s) => {
-    if (s.provider) {
-      try {
-        console.log("Initializing Biconomy ...");
-
-        let biconomy = new Biconomy(s.provider, {
-          apiKey: "K-noYba8u.d36f0e0a-8d24-4fc6-b4ad-7720cca6b93b",
-          contractAddresses: addr,
-          debug: true,
-        });
-
-        await biconomy.init();
-
-        setBiconomy(biconomy);
-
-        setMeta(true);
-        console.log("biconomy", biconomy);
-        console.log("initialized biconmy");
-      } catch (error) {
-        console.log("biconomy error", error);
-      }
-    }
-  };
-
-  const sendMeta = async () => {
-    if (!meta || !ctr) return;
-    console.log("sending meta");
+  const onSubmit = async () => {
+    console.log("Sending meta transaction");
+    const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
     const domainType = [
       { name: "name", type: "string" },
       { name: "version", type: "string" },
@@ -74,6 +48,7 @@ export default function Home() {
       { name: "from", type: "address" },
       { name: "functionSignature", type: "bytes" },
     ];
+
     let domainData = {
       name: "LOMADS-SBT",
       version: "2",
@@ -81,12 +56,13 @@ export default function Home() {
       salt: "0x" + (80001).toString(16).padStart(64, "0"),
     };
 
-    let nonce = await ctr.getNonce(currentAccount);
-    console.log("nonce", nonce.toString());
+    const contractInstance = new ethers.Contract(addr, ABI, signer);
 
     let amount = ethers.utils.parseUnits("1", 18);
-    console.log("amount", amount.toString());
+    console.log("amount", amount);
 
+    let nonce = await contractInstance.getNonce(currentAccount);
+    console.log("nonce", nonce);
     const contractInterface = new ethers.utils.Interface(ABI);
     let functionSignature = contractInterface.encodeFunctionData(
       "deployNewSBT",
@@ -116,11 +92,10 @@ export default function Home() {
       message: message,
     });
 
-    let signature = await provider.send("eth_signTypedData_v3", [
+    let signature = await ethersProvider.send("eth_signTypedData_v3", [
       currentAccount,
       dataToSign,
     ]);
-
     let { r, s, v } = getSignatureParametersEthers(signature);
     sendSignedTransaction(currentAccount, functionSignature, r, s, v);
   };
@@ -146,8 +121,7 @@ export default function Home() {
   const sendSignedTransaction = async (userAddress, functionData, r, s, v) => {
     try {
       console.log(`Sending transaction via Biconomy`);
-
-      let provider = biconomy.provider;
+      const provider = await biconomy.provider;
       const contractInstance = new ethers.Contract(
         addr,
         ABI,
@@ -175,8 +149,6 @@ export default function Home() {
       });
       biconomy.on("txMined", (data) => {
         console.log(data);
-        showSuccessMessage(`tx mined ${data.hash}`);
-        fetchQuote();
       });
     } catch (error) {
       console.log(error);
@@ -188,6 +160,23 @@ export default function Home() {
       createContract();
     }
   }, []);
+
+  useEffect(() => {
+    const initBiconomy = async () => {
+      console.log("signer", signer?.provider);
+      let biconomy = new Biconomy(signer?.provider.provider, {
+        apiKey: "K-noYba8u.d36f0e0a-8d24-4fc6-b4ad-7720cca6b93b",
+        debug: true,
+        contractAddresses: [addr],
+      });
+
+      await biconomy.init();
+      setBiconomy(biconomy);
+      setMeta(true);
+      console.log("biconomy", biconomy);
+    };
+    if (signer) initBiconomy();
+  }, [signer]);
 
   return (
     <>
@@ -201,7 +190,7 @@ export default function Home() {
         hello {currentAccount}
         <button
           onClick={() => {
-            sendMeta();
+            onSubmit();
           }}
         >
           click

@@ -9,12 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@biconomy/mexa": "^3.0.6",
+    "@biconomy/mexa": "^3.0.5",
     "ethers": "^5.7.2",
+    "fs": "^0.0.1-security",
     "net": "^1.0.2",
     "next": "13.2.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "tls": "^0.0.1"
+  },
+  "browser": {
+    "fs": false,
+    "os": false,
+    "path": false
   }
 }
