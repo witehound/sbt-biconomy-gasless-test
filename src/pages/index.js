@@ -10,7 +10,7 @@ import ABI from "../Abi.json";
 export default function Home() {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
-  const addr = "0x5243E2d619914e71a6A820428E0291946C276fa6";
+  const addr = "0x0c46bf973eaA2a7cbD22Ce246876b4C0D5d76ba6";
   const [ctr, setCtr] = useState(null);
   const [currentAccount, setCurrentAccount] = useState(null);
   const [meta, setMeta] = useState(false);
@@ -31,7 +31,7 @@ export default function Home() {
     setCtr(contract);
     console.log("created contract");
     let count = await contract.counter();
-    console.log("count", count.toString());
+    console.log("deployed so far", count.toString());
   };
 
   const onSubmit = async () => {
@@ -51,7 +51,7 @@ export default function Home() {
 
     let domainData = {
       name: "LOMADS-SBT",
-      version: "2",
+      version: "1",
       verifyingContract: addr,
       salt: "0x" + (80001).toString(16).padStart(64, "0"),
     };
@@ -63,6 +63,7 @@ export default function Home() {
 
     let nonce = await contractInstance.getNonce(currentAccount);
     console.log("nonce", nonce);
+
     const contractInterface = new ethers.utils.Interface(ABI);
     let functionSignature = contractInterface.encodeFunctionData(
       "deployNewSBT",
@@ -145,7 +146,6 @@ export default function Home() {
       console.log(tx);
       biconomy.on("txHashGenerated", (data) => {
         console.log(data);
-        showSuccessMessage(`tx hash ${data.hash}`);
       });
       biconomy.on("txMined", (data) => {
         console.log(data);
@@ -162,6 +162,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!currentAccount) return;
     const initBiconomy = async () => {
       console.log("signer", signer?.provider);
       let biconomy = new Biconomy(signer?.provider.provider, {
@@ -176,7 +177,7 @@ export default function Home() {
       console.log("biconomy", biconomy);
     };
     if (signer) initBiconomy();
-  }, [signer]);
+  }, [signer, currentAccount]);
 
   return (
     <>
