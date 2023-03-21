@@ -10,7 +10,7 @@ import ABI from "../Abi.json";
 export default function Home() {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
-  const addr = "0x0c46bf973eaA2a7cbD22Ce246876b4C0D5d76ba6";
+  const addr = "0x2E0fb9Ab0e4c7A41054521557Ba5637534743825";
   const [ctr, setCtr] = useState(null);
   const [currentAccount, setCurrentAccount] = useState(null);
   const [meta, setMeta] = useState(false);
@@ -65,17 +65,24 @@ export default function Home() {
     console.log("nonce", nonce);
 
     const contractInterface = new ethers.utils.Interface(ABI);
-    let functionSignature = contractInterface.encodeFunctionData(
-      "deployNewSBT",
-      [
-        "first",
-        "FST",
-        amount,
-        "0x7564D723f91168b0e5AAf16B4Ce3603e6c28868A",
-        currentAccount,
-        false,
-      ]
-    );
+    // let functionSignature = contractInterface.encodeFunctionData(
+    //   "deployNewSBT",
+    //   [
+    //     "first",
+    //     "FST",
+    //     amount,
+    //     "0x7564D723f91168b0e5AAf16B4Ce3603e6c28868A",
+    //     currentAccount,
+    //     false,
+    //   ]
+    // );
+
+    let functionSignature = contractInterface.encodeFunctionData("mint", [
+      "0x4De16d51cEe5f487Da91448C16e7c4EA2DD557F7",
+      "",
+      0,
+      "0x",
+    ]);
 
     let message = {
       nonce: parseInt(nonce),
@@ -91,6 +98,7 @@ export default function Home() {
       domain: domainData,
       primaryType: "MetaTransaction",
       message: message,
+      value: ethers.utils.parseEther("1"),
     });
 
     let signature = await ethersProvider.send("eth_signTypedData_v3", [
@@ -141,9 +149,10 @@ export default function Home() {
         to: addr,
         from: currentAccount,
         signatureType: "EIP712_SIGN",
+        value: ethers.utils.parseUnits("1", 17),
       };
       const tx = await provider.send("eth_sendTransaction", [txParams]);
-      console.log(tx);
+      console.log("me", tx);
       biconomy.on("txHashGenerated", (data) => {
         console.log(data);
       });
